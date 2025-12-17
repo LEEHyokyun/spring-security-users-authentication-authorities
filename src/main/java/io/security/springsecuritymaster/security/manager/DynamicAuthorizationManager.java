@@ -33,12 +33,18 @@ public class DynamicAuthorizationManager implements AuthorizationManager<Request
     private final HandlerMappingIntrospector handlerMappingIntrospector;
     private final ResourcesRepository resourcesRepository;
 
+    DynamicAuthorizationService dynamicAuthorizationService;
+
     @PostConstruct
     public void mapping(){
         //strategy
         //DynamicAuthorizationService dynamicAuthorizationService = new DynamicAuthorizationService(new MapBasedEndPointMapper());
-        DynamicAuthorizationService dynamicAuthorizationService = new DynamicAuthorizationService(new PersistentDBBasedEndPointMapper(resourcesRepository));
+        dynamicAuthorizationService = new DynamicAuthorizationService(new PersistentDBBasedEndPointMapper(resourcesRepository));
 
+        setMapping();
+    }
+
+    private void setMapping(){
         mappings = dynamicAuthorizationService.getEndPointMappings()
                 .entrySet().stream()
                 .map(entry -> new RequestMatcherEntry<>(
@@ -86,5 +92,19 @@ public class DynamicAuthorizationManager implements AuthorizationManager<Request
         AuthorizationManager.super.verify(authentication, object);
     }
 
-
+    //매핑정보 동시성 문제 방지
+    public synchronized void reload(){
+        /*
+        * 매핑정보 다시 반영
+        * mappings = dynamicAuthorizationService.getEndPointMappings()
+                .entrySet().stream()
+                .map(entry -> new RequestMatcherEntry<>(
+                        new MvcRequestMatcher(handlerMappingIntrospector, entry.getKey()),
+                        endPointAuthroizationManager(entry.getValue())
+                ))
+                .collect(Collectors.toList());
+        * */
+        mappings.clear();
+        setMapping();
+    }
 }

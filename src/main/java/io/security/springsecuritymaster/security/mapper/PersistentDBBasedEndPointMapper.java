@@ -16,6 +16,7 @@ public class PersistentDBBasedEndPointMapper implements EndPointRoleMapper {
 
     @Override
     public Map<String, String> getUrlToleMapping() {
+        urlRoleMappings.clear();
         List<Resources> resourcesList = resourcesRepository.findAllResources();
 
         resourcesList.stream().forEach(resource -> {
