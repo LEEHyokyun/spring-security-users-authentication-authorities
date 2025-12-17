@@ -2,6 +2,7 @@ package io.security.springsecuritymaster.security.configs;
 
 import io.security.springsecuritymaster.security.dsl.RestApiDsl;
 import io.security.springsecuritymaster.security.entrypoint.RestAuthenticationEntryPoint;
+import io.security.springsecuritymaster.security.filters.CustomizedAutorizationFilter;
 import io.security.springsecuritymaster.security.handler.*;
 import io.security.springsecuritymaster.security.manager.DynamicAuthorizationManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
@@ -32,7 +34,8 @@ public class SecurityConfig {
     private final FormAuthenticationFailureHandler failureHandler;
     private final RestAuthenticationSuccessHandler restSuccessHandler;
     private final RestAuthenticationFailureHandler restFailureHandler;
-    private final AuthorizationManager<RequestAuthorizationContext> dynamicAuthorizationManager;
+    //private final AuthorizationManager<RequestAuthorizationContext> dynamicAuthorizationManager;
+    private final AuthorizationManager<HttpServletRequest> authorizationManager;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -48,7 +51,8 @@ public class SecurityConfig {
 //                        .requestMatchers("/manager").hasAuthority("ROLE_MANAGER")
 //                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 //                        .anyRequest().permitAll())
-                        .anyRequest().access(dynamicAuthorizationManager)
+                        //.anyRequest().access(dynamicAuthorizationManager)
+                          .anyRequest().permitAll()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
@@ -60,8 +64,14 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception
                         .accessDeniedHandler(new FormAccessDeniedHandler("/denied"))
                 )
+                .addFilterAfter(customizedAutorizationFilter(null), ExceptionTranslationFilter.class)
         ;
         return http.build();
+    }
+
+    @Bean
+    public CustomizedAutorizationFilter customizedAutorizationFilter(HttpSecurity http) throws Exception {
+        return new CustomizedAutorizationFilter(authorizationManager);
     }
 
 
